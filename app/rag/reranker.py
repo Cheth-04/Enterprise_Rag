@@ -1,55 +1,72 @@
 from FlagEmbedding import FlagReranker
-
 from app.config import settings
-
 
 class Reranker:
 
-    def __init__(self):
+    _model=None
 
-        self.model = FlagReranker(
+    def get_model(self):
 
-            settings.reranker_model,
+        if self._model is None:
 
-            use_fp16=False
+            print(
+                "Loading reranker..."
+            )
 
-        )
+            self._model=FlagReranker(
+                settings.reranker_model,
+                use_fp16=False
+            )
+
+        return self._model
 
 
-    def rerank(self, question: str, chunks: list[dict]) -> list[dict]:
+    def rerank(
+        self,
+        question,
+        chunks
+    ):
 
         if not chunks:
-
             return []
 
+        model=self.get_model()
 
-        pairs = [[question, chunk["text"]] for chunk in chunks]
+        pairs=[
+            [question,c["text"]]
+            for c in chunks
+        ]
 
-        scores = self.model.compute_score(pairs)
-
-
-        if not isinstance(scores, list):
-
-            scores = [scores]
-
-
-        for chunk, score in zip(chunks, scores):
-
-            chunk["rerank_score"] = float(score)
-
-
-        sorted_chunks = sorted(
-
-            chunks,
-
-            key=lambda item: item["rerank_score"],
-
-            reverse=True
-
+        scores=model.compute_score(
+            pairs
         )
 
+        if not isinstance(
+            scores,
+            list
+        ):
+            scores=[scores]
 
-        return sorted_chunks[:settings.top_k_reranked]
+
+        for chunk,score in zip(
+            chunks,
+            scores
+        ):
+
+            chunk[
+                "rerank_score"
+            ]=float(score)
 
 
-reranker = Reranker()
+        chunks.sort(
+            key=lambda x:
+            x["rerank_score"],
+            reverse=True
+        )
+
+        return chunks[
+            :settings.top_k_reranked
+        ]
+
+
+reranker=Reranker()      

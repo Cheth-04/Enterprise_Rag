@@ -1,49 +1,24 @@
-from FlagEmbedding import BGEM3FlagModel
-
-from app.config import settings
-
+from sentence_transformers import SentenceTransformer
 
 class Embedder:
-
     def __init__(self):
-
-        self.model = BGEM3FlagModel(
-
-            settings.embedding_model,
-
-            use_fp16=False
-
+        self.model = SentenceTransformer(
+            "BAAI/bge-small-en-v1.5"
         )
 
+    def embed_documents(self, texts):
+        if isinstance(texts, str):
+            texts = [texts]
 
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-
-        output = self.model.encode(
-
+        vectors = self.model.encode(
             texts,
-
-            batch_size=4,
-
-            max_length=8192
-
+            normalize_embeddings=True
         )
 
-        return output["dense_vecs"].tolist()
+        return vectors.tolist()
 
-
-    def embed_query(self, query: str) -> list[float]:
-
-        output = self.model.encode(
-
-            [query],
-
-            batch_size=1,
-
-            max_length=8192
-
-        )
-
-        return output["dense_vecs"][0].tolist()
+    def embed_query(self, text):
+        return self.embed_documents([text])[0]
 
 
 embedder = Embedder()

@@ -1,45 +1,23 @@
 from qdrant_client import QdrantClient
-
 from app.config import settings
-
 from app.rag.embedder import embedder
-
 
 client = QdrantClient(url=settings.qdrant_url)
 
-
-def retrieve_chunks(question: str) -> list[dict]:
+def retrieve(question: str, limit: int = 5):
 
     query_vector = embedder.embed_query(question)
 
-
-    results = client.search(
-
+    results = client.query_points(
         collection_name=settings.qdrant_collection,
+        query=query_vector,
+        limit=limit
+    ).points
 
-        query_vector=query_vector,
+    chunks = []
 
-        limit=settings.top_k_retrieval
+    for hit in results:
+        if hit.payload and "text" in hit.payload:
+            chunks.append(hit.payload["text"])
 
-    )
-
-
-    retrieved = []
-
-
-    for result in results:
-
-        retrieved.append({
-
-            "filename": result.payload.get("filename"),
-
-            "chunk_index": result.payload.get("chunk_index"),
-
-            "text": result.payload.get("text"),
-
-            "vector_score": result.score
-
-        })
-
-
-    return retrieved
+    return chunks

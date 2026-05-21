@@ -1,37 +1,26 @@
-from app.rag.retriever import retrieve_chunks
+from app.rag.retriever import retrieve
+from app.rag.generator import generate_answer_stream
 
-from app.rag.reranker import reranker
+def stream_answer(question: str):
+    chunks = retrieve(question)
 
-from app.rag.generator import generate_answer
+    if not chunks:
+        yield "No relevant documents found.\n\nSources:\n"
+        return
 
+    top_chunks = chunks[:5]
 
-def answer_question(question: str) -> dict:
+    answer = ""
+    for token in generate_answer_stream(question, top_chunks):
+        answer += token
+        yield token
 
-    retrieved_chunks = retrieve_chunks(question)
+    yield "\n\nSources:\n"
 
-
-    reranked_chunks = reranker.rerank(
-
-        question,
-
-        retrieved_chunks
-
-    )
-
-
-    answer = generate_answer(
-
-        question,
-
-        reranked_chunks
-
-    )
-
-
-    return {
-
-        "answer": answer,
-
-        "sources": reranked_chunks
-
-    }
+    seen = set()
+    for item in top_chunks:
+        key = (item["filename"], item["chunk_index"])
+        if key in seen:
+            continue
+        seen.add(key)
+        yield f"• {item['filename']} (chunk {item['chunk_index']})\n"

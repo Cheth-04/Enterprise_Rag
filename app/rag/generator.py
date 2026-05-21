@@ -1,100 +1,108 @@
 import requests
-
+import json
 from app.config import settings
 
 
-def generate_answer(question: str, context_chunks: list[dict]) -> str:
+def generate_answer_stream(
+    question,
+    context_chunks,
+    chat_history=None
+):
 
-    context = "\n\n".join(
+    if chat_history is None:
+        chat_history=[]
 
-        [
+    context="\n\n".join([
+        c["text"]
+        for c in context_chunks
+    ])
 
-            f"[Source: {chunk['filename']} | Chunk: {chunk['chunk_index']}]\n{chunk['text']}"
+    messages=[
 
-            for chunk in context_chunks
+        {
+            "role":"system",
+            "content":
+            """
+You are an enterprise assistant.
 
-        ]
+Use previous conversation history if relevant.
 
-    )
-
-
-    system_prompt = """
-
-You are an enterprise knowledge assistant.
-
-Answer only using the provided context when possible.
-
-If the answer is not available in the context, clearly say:
-
-"I could not find that information in the indexed documents."
-
-Do not invent policies, numbers, or steps.
-
-Keep answers clear, structured, and useful.
-
+Answer only from supplied context.
 """
+        }
 
+    ]
 
-    user_prompt = f"""
+    messages.extend(chat_history)
 
+    messages.append(
+        {
+            "role":"user",
+            "content":
+f"""
 Context:
 
 {context}
 
-
 Question:
 
 {question}
-
-
-Answer:
-
 """
+        }
+    )
 
+    payload={
 
-    payload = {
+        "model":
+        settings.lmstudio_model,
 
-        "model": settings.ollama_model,
+        "messages":
+        messages,
 
-        "stream": False,
+        "stream":True,
 
-        "messages": [
-
-            {
-
-                "role": "system",
-
-                "content": system_prompt.strip()
-
-            },
-
-            {
-
-                "role": "user",
-
-                "content": user_prompt.strip()
-
-            }
-
-        ]
-
+        "temperature":0.2
     }
 
 
-    response = requests.post(
-
-        f"{settings.ollama_base_url}/api/chat",
-
+    response=requests.post(
+        f"{settings.lmstudio_base_url}/chat/completions",
         json=payload,
-
-        timeout=300
-
+        stream=True
     )
 
+    for line in response.iter_lines():
 
-    response.raise_for_status()
+        if line:
 
-    data = response.json()
+            decoded=line.decode()
 
+            if decoded.startswith(
+                "data: "
+            ):
 
-    return data["message"]["content"]
+                data=decoded[6:]
+
+                if data=="[DONE]":
+                    break
+
+                try:
+
+                    parsed=json.loads(
+                        data
+                    )
+
+                    delta=parsed[
+                        "choices"
+                    ][0]["delta"]
+
+                    content=delta.get(
+                        "content",
+                        ""
+                    )
+
+                    if content:
+                        yield content
+
+                except:
+                    pass

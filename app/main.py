@@ -1,21 +1,50 @@
 import os
-
 import shutil
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import (
+    FastAPI,
+    UploadFile,
+    File,
+    HTTPException,
+    Request
+)
+
+from fastapi.responses import StreamingResponse
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.staticfiles import StaticFiles
 
-from app.schemas import ChatRequest, ChatResponse, SourceChunk, IngestResponse
+from app.auth import verify_user
+from app.schemas import LoginRequest
 
-from app.ingestion.parser import parse_document_to_markdown
+from app.schemas import (
+    ChatRequest,
+    ChatResponse,
+    SourceChunk,
+    IngestResponse
+)
 
-from app.ingestion.chunker import chunk_text
+from app.ingestion.parser import (
+    parse_document_to_markdown
+)
 
-from app.ingestion.indexer import index_chunks
+from app.ingestion.chunker import (
+    chunk_text
+)
 
-from app.rag.service import answer_question
+from app.ingestion.indexer import (
+    index_chunks
+)
+
+from app.rag.service import (
+    stream_answer
+)
+
+from app.document_manager import (
+    list_documents,
+    delete_document
+)
 
 
 app = FastAPI(
@@ -27,6 +56,13 @@ app = FastAPI(
 )
 
 
+app.mount(
+    "/static",
+    StaticFiles(directory="app/static"),
+    name="static"
+)
+
+
 app.add_middleware(
 
     CORSMiddleware,
@@ -35,7 +71,9 @@ app.add_middleware(
 
         "http://192.168.1.41:8000",
 
-        "http://localhost:8000"
+        "http://localhost:8000",
+
+        "*"
 
     ],
 
@@ -43,46 +81,94 @@ app.add_middleware(
 
     allow_methods=["*"],
 
-    allow_headers=["*"],
+    allow_headers=["*"]
 
 )
 
 
-UPLOAD_DIR = "/app/uploads"
 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+UPLOAD_DIR="/app/uploads"
+
+os.makedirs(
+    UPLOAD_DIR,
+    exist_ok=True
+)
+
+
+
+@app.middleware("http")
+async def disable_cache(
+    request: Request,
+    call_next
+):
+
+    response = await call_next(
+        request
+    )
+
+    if request.url.path.startswith(
+        "/static"
+    ):
+
+        response.headers[
+            "Cache-Control"
+        ]="no-store,no-cache,must-revalidate,max-age=0"
+
+    return response
+
 
 
 @app.get("/")
-
 def health_check():
 
     return {
 
-        "status": "ok",
+        "status":"ok",
 
-        "service": "Enterprise RAG API"
+        "service":
+        "Enterprise RAG API"
 
     }
 
 
-@app.post("/ingest", response_model=IngestResponse)
 
-async def ingest_document(file: UploadFile = File(...)):
+@app.post(
+    "/ingest",
+    response_model=IngestResponse
+)
+async def ingest_document(
+    file: UploadFile=File(...)
+):
 
     try:
 
-        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        file_path=os.path.join(
+            UPLOAD_DIR,
+            file.filename
+        )
 
 
-        with open(file_path, "wb") as buffer:
+        with open(
+            file_path,
+            "wb"
+        ) as buffer:
 
-            shutil.copyfileobj(file.file, buffer)
+            shutil.copyfileobj(
+                file.file,
+                buffer
+            )
 
 
-        markdown_text = parse_document_to_markdown(file_path)
+        markdown_text=(
+            parse_document_to_markdown(
+                file_path
+            )
+        )
 
-        chunks = chunk_text(markdown_text)
+
+        chunks=chunk_text(
+            markdown_text
+        )
 
 
         if not chunks:
@@ -91,21 +177,30 @@ async def ingest_document(file: UploadFile = File(...)):
 
                 status_code=400,
 
-                detail="No usable text found in uploaded document."
+                detail=
+                "No usable text found in uploaded document."
 
             )
 
 
-        indexed_count = index_chunks(file.filename, chunks)
+        indexed_count=(
+            index_chunks(
+                file.filename,
+                chunks
+            )
+        )
 
 
         return IngestResponse(
 
-            filename=file.filename,
+            filename=
+            file.filename,
 
-            chunks_indexed=indexed_count,
+            chunks_indexed=
+            indexed_count,
 
-            message="Document parsed, chunked, embedded, and indexed successfully."
+            message=
+            "Document parsed, chunked, embedded, and indexed successfully."
 
         )
 
@@ -116,47 +211,31 @@ async def ingest_document(file: UploadFile = File(...)):
 
             status_code=500,
 
-            detail=f"Document ingestion failed: {str(exc)}"
+            detail=
+            f"Document ingestion failed: {str(exc)}"
 
         )
 
 
-@app.post("/chat", response_model=ChatResponse)
 
-def chat(request: ChatRequest):
+@app.post(
+    "/chat",
+    response_class=StreamingResponse
+)
+def chat(
+    request: ChatRequest
+):
 
     try:
 
-        result = answer_question(request.question)
+        return StreamingResponse(
 
+            stream_answer(
+                request.question
+            ),
 
-        source_items = []
-
-
-        for chunk in result["sources"]:
-
-            source_items.append(
-
-                SourceChunk(
-
-                    filename=chunk["filename"],
-
-                    chunk_index=chunk["chunk_index"],
-
-                    score=chunk.get("rerank_score"),
-
-                    text_preview=chunk["text"][:220]
-
-                )
-
-            )
-
-
-        return ChatResponse(
-
-            answer=result["answer"],
-
-            sources=source_items
+            media_type=
+            "text/plain"
 
         )
 
@@ -167,6 +246,80 @@ def chat(request: ChatRequest):
 
             status_code=500,
 
-            detail=f"RAG chat failed: {str(exc)}"
+            detail=
+            f"RAG chat failed: {str(exc)}"
 
         )
+
+
+
+@app.post("/chat-stream")
+def chat_stream(
+    request: ChatRequest
+):
+
+    return StreamingResponse(
+
+        stream_answer(
+            request.question
+        ),
+
+        media_type=
+        "text/plain"
+
+    )
+
+
+
+@app.get("/documents")
+def get_documents():
+
+    return {
+
+        "documents":
+        list_documents()
+
+    }
+
+
+
+@app.delete(
+    "/documents/{filename}"
+)
+def remove_document(
+    filename:str
+):
+
+    delete_document(
+        filename
+    )
+
+    return {
+
+        "message":
+        f"{filename} deleted"
+
+    } 
+
+@app.post("/login")
+def login(
+    req:LoginRequest
+):
+
+    token=verify_user(
+        req.username,
+        req.password
+    )
+
+    if not token:
+
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
+
+    return{
+
+        "token":
+        token
+    }

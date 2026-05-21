@@ -33,3 +33,14 @@ class IngestResponse(BaseModel):
     chunks_indexed: int
 
     message: str
+
+from pydantic import BaseModel
+
+
+class LoginRequest(
+    BaseModel
+):
+
+    username:str
+
+    password:str
