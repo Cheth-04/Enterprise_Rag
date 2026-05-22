@@ -20,6 +20,8 @@ RUN pip install --default-timeout=1000 --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-RUN mkdir -p /app/uploads
+RUN mkdir -p /app/uploads /app/uploads/jobs
 
-CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","8010"]
+# Single worker — background threads handle ingestion concurrency.
+# 2 workers doubled RAM usage (BGE-M3 loaded twice = ~4 GB) causing OOM on large PDFs.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8010", "--workers", "1"]
