@@ -53,7 +53,7 @@ def _ingest_worker(job_id: str, file_path: str, filename: str):
 
         update_job(job_id, status="indexing",
                    message=f"Embedding & indexing {len(chunks)} chunks…")
-        indexed_count = index_chunks(filename, chunks)
+        indexed_count = index_chunks(filename, chunks, job_id=job_id)
 
         update_job(job_id, status="done",
                    message=f"Indexed {indexed_count} chunks successfully.",

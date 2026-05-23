@@ -1,34 +1,28 @@
 import os
-from docling.document_converter import (
-    DocumentConverter,
-    PdfFormatOption,
-    PowerpointFormatOption,
-)
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+import fitz  # PyMuPDF — lightweight, page-by-page PDF extraction
+
+from docling.document_converter import DocumentConverter, PowerpointFormatOption
 from docling.datamodel.base_models import InputFormat
 
-
-def _make_converter() -> DocumentConverter:
-    pdf_opts = PdfPipelineOptions()
-    pdf_opts.do_ocr             = False   # skip OCR — saves ~1 GB RAM
-    pdf_opts.do_table_structure = False   # skip table ML model — saves ~500 MB RAM
-    # If you need tables, flip do_table_structure back to True
-
-    return DocumentConverter(
-        format_options={
-            InputFormat.PDF:  PdfFormatOption(pipeline_options=pdf_opts),
-            InputFormat.PPTX: PowerpointFormatOption(),
-        }
-    )
-
-
-# Single converter instance reused across requests
-_converter = _make_converter()
+# Docling is only used for DOCX and PPTX — not PDF
+_docling_converter = DocumentConverter(
+    format_options={
+        InputFormat.PPTX: PowerpointFormatOption(),
+    }
+)
 
 _SUPPORTED = {".pdf", ".docx", ".pptx", ".txt"}
 
 
 def parse_document_to_markdown(file_path: str) -> str:
+    """
+    Converts documents to plain text / markdown.
+
+    PDF  → PyMuPDF  (page-by-page, <100 MB RAM regardless of file size)
+    DOCX → Docling
+    PPTX → Docling
+    TXT  → read directly
+    """
     ext = os.path.splitext(file_path)[1].lower()
 
     if ext not in _SUPPORTED:
@@ -38,17 +32,44 @@ def parse_document_to_markdown(file_path: str) -> str:
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             return f.read()
 
-    result = _converter.convert(file_path)
+    if ext == ".pdf":
+        return _parse_pdf(file_path)
 
+    # DOCX / PPTX via Docling
+    result = _docling_converter.convert(file_path)
     if result is None or result.document is None:
         raise ValueError(f"Docling could not parse {os.path.basename(file_path)}")
 
     markdown = result.document.export_to_markdown()
-
     if not markdown or not markdown.strip():
         raise ValueError(
-            f"Docling returned empty content for {os.path.basename(file_path)}. "
-            "The file may be image-only or corrupted."
+            f"No text extracted from {os.path.basename(file_path)}. "
+            "File may be image-only or corrupted."
+        )
+    return markdown
+
+
+def _parse_pdf(file_path: str) -> str:
+    """
+    Extracts text from a PDF using PyMuPDF.
+    Processes one page at a time — constant memory regardless of file size.
+    Raises ValueError if the PDF yields no text (scanned/image-only).
+    """
+    doc = fitz.open(file_path)
+    pages: list[str] = []
+
+    try:
+        for page in doc:
+            text = page.get_text("text")   # plain text per page
+            if text.strip():
+                pages.append(text.strip())
+    finally:
+        doc.close()
+
+    if not pages:
+        raise ValueError(
+            "No text could be extracted from this PDF. "
+            "It may be a scanned image — try running OCR on it first."
         )
 
-    return markdown
+    return "\n\n".join(pages)

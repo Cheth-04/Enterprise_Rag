@@ -449,24 +449,30 @@ async function fetchJobStatus(job_id) {
 }
 
 async function pollJobStatus(job_id, fileIndex, startTime) {
-  const POLL_INTERVAL = 2000;   // ms between polls
-  const MAX_WAIT = 5 * 60 * 1000;  // 5 minute timeout
+  const POLL_INTERVAL = 3000;   // ms between polls
 
   while (true) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
 
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const job = await fetchJobStatus(job_id);
+    const mins    = Math.floor(elapsed / 60);
+    const secs    = elapsed % 60;
+    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+    let job;
+    try {
+      job = await fetchJobStatus(job_id);
+    } catch {
+      // Network blip — keep polling
+      setFileStatus(fileIndex, "uploading", `⏳ Waiting for server… (${timeStr})`);
+      continue;
+    }
 
     if (job.status === "done" || job.status === "error") return;
 
-    // Show the current phase + elapsed time
-    const label = PHASE_LABELS[job.status] || `⏳ ${job.status}…`;
-    setFileStatus(fileIndex, "uploading", `${label} (${elapsed}s)`);
-
-    if (Date.now() - startTime > MAX_WAIT) {
-      throw new Error("Timed out after 5 minutes");
-    }
+    // Show live message from server (includes chunk progress %)
+    const label = job.message || PHASE_LABELS[job.status] || `⏳ Processing…`;
+    setFileStatus(fileIndex, "uploading", `${label} (${timeStr})`);
   }
 }
 

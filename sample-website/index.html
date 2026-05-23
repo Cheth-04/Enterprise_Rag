@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acme Corp — Enterprise Portal</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #07080F; --surface: #0E1018; --border: #1C1F2E;
+      --accent: #4F46E5; --accent2: #7C3AED; --text: #E8EAF0; --muted: #6B7280;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: .4;
+    }
+    .blob { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .blob-1 { width: 600px; height: 600px; top: -200px; left: -100px; background: radial-gradient(circle, #4F46E530, transparent 70%); }
+    .blob-2 { width: 500px; height: 500px; bottom: -100px; right: -50px; background: radial-gradient(circle, #7C3AED28, transparent 70%); }
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(7,8,15,.7); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; }
+    .nav-logo-mark {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-logo-mark svg { width: 18px; height: 18px; }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; transition: color .15s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-outline { padding: 8px 18px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; transition: background .15s; }
+    .btn-outline:hover { background: var(--border); }
+    .btn-fill { padding: 8px 18px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: opacity .15s; }
+    .btn-fill:hover { opacity: .9; }
+    main { position: relative; z-index: 1; }
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 120px 24px 80px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #4F46E518; border: 1px solid #4F46E540;
+      border-radius: 100px; padding: 6px 14px;
+      font-size: 12px; color: #A5B4FC; font-weight: 500; margin-bottom: 32px;
+    }
+    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #A5B4FC; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .hero h1 {
+      font-family: 'Syne', sans-serif; font-size: clamp(40px, 7vw, 80px);
+      font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff 30%, #9CA3AF);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p { font-size: clamp(16px, 2vw, 20px); color: var(--muted); max-width: 560px; line-height: 1.7; margin-bottom: 44px; }
+    .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .hero-cta {
+      padding: 14px 32px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 15px; font-weight: 600; border: none;
+      cursor: pointer; text-decoration: none; box-shadow: 0 4px 24px #4F46E540;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px #4F46E550; }
+    .hero-secondary { padding: 14px 32px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: background .15s; }
+    .hero-secondary:hover { background: var(--surface); }
+    .stats { display: flex; justify-content: center; gap: 0; margin-top: 80px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; max-width: 680px; width: 100%; }
+    .stat { flex: 1; padding: 28px 20px; text-align: center; border-right: 1px solid var(--border); }
+    .stat:last-child { border-right: none; }
+    .stat-value { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; color: #fff; }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .features { padding: 100px 48px; max-width: 1200px; margin: 0 auto; }
+    .section-label { text-align: center; font-size: 12px; font-weight: 600; color: #A5B4FC; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 16px; }
+    .section-title { text-align: center; font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 64px; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color .2s, transform .2s; }
+    .feature-card:hover { border-color: #4F46E560; transform: translateY(-3px); }
+    .feature-icon { width: 44px; height: 44px; border-radius: 10px; background: #4F46E518; border: 1px solid #4F46E530; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+    .feature-icon svg { width: 22px; height: 22px; stroke: #A5B4FC; }
+    .feature-card h3 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--muted); line-height: 1.65; }
+    .cta-section { padding: 80px 48px; text-align: center; }
+    .cta-card { max-width: 720px; margin: 0 auto; background: linear-gradient(135deg, #4F46E518, #7C3AED10); border: 1px solid #4F46E540; border-radius: 24px; padding: 60px 40px; }
+    .cta-card h2 { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; margin-bottom: 14px; }
+    .cta-card p { color: var(--muted); font-size: 16px; margin-bottom: 32px; line-height: 1.6; }
+    footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); }
+    .footer-logo { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); }
+    @media (max-width: 640px) { nav { padding: 16px 20px; } .nav-links { display: none; } .features { padding: 60px 20px; } footer { flex-direction: column; gap: 12px; text-align: center; } }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      Acme Corp
+    </div>
+    <div class="nav-links">
+      <a href="#">Products</a><a href="#">Solutions</a><a href="#">Docs</a><a href="#">About</a>
+    </div>
+    <div class="nav-actions">
+      <a href="#" class="btn-outline">Log in</a>
+      <a href="#" class="btn-fill">Get started</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div class="hero-badge"><span class="hero-badge-dot"></span>AI-Powered Enterprise Knowledge Base</div>
+      <h1>Your documents,<br/>instantly searchable.</h1>
+      <p>Ask questions across all your enterprise documents in plain English. Get grounded, accurate answers in seconds — powered by state-of-the-art RAG.</p>
+      <div class="hero-actions">
+        <a href="#" class="hero-cta">Try it free</a>
+        <a href="#" class="hero-secondary">View demo →</a>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-value">10×</div><div class="stat-label">Faster retrieval</div></div>
+        <div class="stat"><div class="stat-value">99%</div><div class="stat-label">Accuracy</div></div>
+        <div class="stat"><div class="stat-value">PDF·DOCX·PPTX</div><div class="stat-label">All formats</div></div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title">Enterprise-grade RAG pipeline</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <h3>Smart Document Parsing</h3>
+          <p>Upload PDFs, Word docs, and PowerPoint files. Our pipeline extracts and structures every piece of content automatically.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <h3>Semantic Search</h3>
+          <p>BGE-M3 embeddings understand the meaning behind your question — not just keywords — for pinpoint relevant retrieval.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+          <h3>BGE Reranking</h3>
+          <p>Retrieved chunks are reranked by a cross-encoder model to surface only the most relevant context before generation.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <h3>Grounded Answers</h3>
+          <p>Qwen3 generates answers strictly grounded in your documents with source citations — no hallucinations.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <h3>Role-Based Access</h3>
+          <p>Admins manage documents. Users only chat. JWT-secured endpoints ensure the right people have the right access.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+          <h3>Embed Anywhere</h3>
+          <p>One script tag drops the chatbot widget into any website. No iframe, no framework dependency, no rebuild required.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="cta-card">
+        <h2>Try the AI assistant</h2>
+        <p>Click the chat bubble in the bottom-right corner. Sign in and start asking questions about your indexed documents.</p>
+        <a href="#" class="hero-cta">Open the assistant →</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span class="footer-logo">Acme Corp</span>
+    <span>© 2026 Acme Corp. All rights reserved.</span>
+    <span>Powered by Enterprise RAG</span>
+  </footer>
+
+  <!--
+    ╔══════════════════════════════════════════════════╗
+    ║  RAG CHATBOT WIDGET — embed on any site with     ║
+    ║  these 2 script tags. Change serverUrl to your   ║
+    ║  deployed RAG API address.                       ║
+    ╚══════════════════════════════════════════════════╝
+  -->
+  <script>
+    window.RAG_CONFIG = {
+      serverUrl: "http://192.168.1.18:8010",
+      title: "Acme AI Assistant",
+      theme: "#4F46E5"
+    };
+  </script>
+  <script src="http://192.168.1.18:8010/static/widget.js"></script>
+
+</body>
+</html>

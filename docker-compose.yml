@@ -25,6 +25,12 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - qdrant
+    deploy:
+      resources:
+        limits:
+          memory: 6g        # hard cap — adjust up if you have more RAM
+        reservations:
+          memory: 3g        # guaranteed minimum
 
 volumes:
   hf_cache:
