@@ -469,3 +469,39 @@ html, body {
   padding: 48px;
   color: var(--text-muted);
 }
+
+/* ── Leads table ──────────────────────────────────────────────── */
+.leads-wrap {
+  flex: 1;
+  overflow: auto;
+}
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.leads-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+}
+.leads-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.leads-table tr:hover td { background: var(--surface2); }
+.leads-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}

@@ -1,36 +1,44 @@
+# ════════════════════════════════════════════════════
+#  Enterprise RAG — docker-compose.yml
+#  Run with: docker compose up -d
+# ════════════════════════════════════════════════════
 services:
 
   qdrant:
     image: qdrant/qdrant:latest
     container_name: rag-qdrant
     restart: unless-stopped
-    ports:
-      - "6333:6333"
-      - "6334:6334"
     volumes:
-      - ./qdrant_storage:/qdrant/storage
+      - ./qdrant_storage:/qdrant/storage   # vector data persisted here
+    # Not exposed externally — only rag-api talks to it
 
   rag-api:
-    build: .
+    build: .   # ← your pushed Docker image
     container_name: rag-api
     restart: unless-stopped
     ports:
-      - "8010:8010"
+      - "8010:8010"       # Admin panel + API
     env_file:
-      - .env
+      - .env              # all config goes here
     volumes:
-      - ./uploads:/app/uploads
-      - hf_cache:/root/.cache/huggingface
+      - ./uploads:/app/uploads          # uploaded files + leads.json + job files
+      - hf_cache:/root/.cache/huggingface   # model cache (survives restarts)
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - qdrant
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s   # allow time for model loading on first start
     deploy:
       resources:
         limits:
-          memory: 6g        # hard cap — adjust up if you have more RAM
+          memory: 6g
         reservations:
-          memory: 3g        # guaranteed minimum
+          memory: 3g
 
 volumes:
   hf_cache:

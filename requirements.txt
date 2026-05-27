@@ -5,13 +5,14 @@ pydantic
 pydantic-settings
 requests
 qdrant-client
+slowapi
 
 # Document parsing
-pymupdf              # PDF extraction — lightweight, page-by-page
-python-pptx          # needed by Docling for PPTX
-docling==2.94.0      # used for DOCX and PPTX only
+pymupdf
+python-pptx
+docling==2.94.0
 
-# ML / embeddings
+# ML
 torch==2.7.1
 transformers==4.52.4
 sentence-transformers==5.1.0

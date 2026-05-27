@@ -1,0 +1,10 @@
+
+# Ignore Database State
+qdrant_storage/
+
+# Ignore Mac System Files
+.DS_Store
+
+# Ignore Python Cache (optional but recommended)
+__pycache__/
+*.pyc

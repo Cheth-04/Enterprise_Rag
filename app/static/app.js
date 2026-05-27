@@ -564,3 +564,92 @@ function formatBytes(bytes) {
 }
 
 document.getElementById("refresh-docs-btn")?.addEventListener("click", loadDocuments);
+
+// ── Leads ──────────────────────────────────────────────────────
+async function loadLeads() {
+  const wrap    = document.getElementById("leads-wrap");
+  const alertEl = document.getElementById("leads-alert");
+  alertEl.classList.add("hidden");
+  wrap.innerHTML = '<div class="empty-state"><p>Loading…</p></div>';
+
+  try {
+    const res = await fetch(`${API}/leads`, { headers: authHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data  = await res.json();
+    const leads = data.leads || [];
+
+    if (!leads.length) {
+      wrap.innerHTML = '<div class="empty-state"><p>No leads captured yet. Enable <code>COLLECT_USER_DETAILS=true</code> in your .env to start collecting.</p></div>';
+      return;
+    }
+
+    wrap.innerHTML = `
+      <p class="leads-count">${leads.length} lead${leads.length !== 1 ? "s" : ""} captured</p>
+      <table class="leads-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Date &amp; Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${leads.slice().reverse().map(l => `
+            <tr>
+              <td>${escHtml(l.name)}</td>
+              <td>${escHtml(l.email)}</td>
+              <td>${escHtml(l.phone || "—")}</td>
+              <td>${new Date(l.timestamp).toLocaleString()}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+    // Wire export button
+    document.getElementById("export-leads-btn").onclick = () => exportCSV(leads);
+
+  } catch (err) {
+    showAlert(alertEl, `Failed to load leads: ${err.message}`, "error");
+    wrap.innerHTML = "";
+  }
+}
+
+function exportCSV(leads) {
+  const header = ["Name", "Email", "Phone", "Timestamp"];
+  const rows   = leads.map(l => [
+    `"${(l.name  || "").replace(/"/g, '""')}"`,
+    `"${(l.email || "").replace(/"/g, '""')}"`,
+    `"${(l.phone || "").replace(/"/g, '""')}"`,
+    `"${l.timestamp || ""}"`,
+  ]);
+  const csv  = [header, ...rows].map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `leads_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// Override switchTab to handle leads lazy load
+const _origSwitchTab = switchTab;
+window.switchTab = function(name) {
+  _origSwitchTab(name);
+  if (name === "leads") loadLeads();
+};
+
+// Patch nav items to use overridden switchTab
+document.querySelectorAll(".nav-item").forEach(btn => {
+  btn.onclick = () => window.switchTab(btn.dataset.tab);
+});
