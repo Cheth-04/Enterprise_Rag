@@ -225,6 +225,7 @@ async def ingest_document(
 
     logger.info(f"Ingest job {job_id} started for '{file.filename}'")
     return IngestResponse(
+        job_id=job_id,
         filename=file.filename,
         chunks_indexed=0,
         message=f"Job {job_id} queued.",

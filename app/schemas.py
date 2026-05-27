@@ -24,6 +24,7 @@ class ChatResponse(BaseModel):
 
 
 class IngestResponse(BaseModel):
+    job_id: str
     filename: str
     chunks_indexed: int
     message: str
