@@ -319,7 +319,7 @@ function addFiles(files) {
     "text/plain",
   ];
   files.forEach(f => {
-    if (!allowed.includes(f.type) && !f.name.match(/\.(pdf|docx|pptx|txt)$/i)) return;
+    if (!allowed.includes(f.type) && !f.name.match(/\.(pdf|docx|pptx|txt|md)$/i)) return;
     if (selectedFiles.find(x => x.name === f.name)) return;
     selectedFiles.push(f);
   });

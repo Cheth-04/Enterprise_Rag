@@ -57,7 +57,7 @@ JOBS_DIR   = "/app/uploads/jobs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(JOBS_DIR,   exist_ok=True)
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt"}
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt",".md"}
 MAX_FILE_BYTES = settings.max_file_size_mb * 1024 * 1024
 
 
@@ -199,7 +199,7 @@ async def ingest_document(
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file type '{ext}'. Allowed: PDF, DOCX, PPTX, TXT",
+            detail=f"Unsupported file type '{ext}'. Allowed: PDF, DOCX, PPTX, TXT ,MD",
         )
 
     # File size check
