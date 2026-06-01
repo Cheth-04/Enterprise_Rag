@@ -161,7 +161,9 @@
 
     #rag-footer {
       padding:7px 14px; border-top:1px solid #1C1F2E;
-      text-align:center; font-size:10px; color:#374151; flex-shrink:0;
+      text-align:center; font-size:10px; flex-shrink:0;
+      color: ${THEME}; opacity: 0.85;
+      display:flex; align-items:center; justify-content:center; gap:4px;
     }
   `;
   document.head.appendChild(style);
@@ -235,7 +237,11 @@
         </div>
       </div>
 
-      <div id="rag-footer">Powered by Enterprise RAG</div>
+      <div id="rag-footer">
+        <img src="${SERVER}/static/jayathisoft-logo-transparent.png" 
+          style="height:14px;vertical-align:middle;margin-right:5px;opacity:0.85;" />
+        Powered by Jayathisoft
+      </div>
     </div>
   `;
   document.body.appendChild(root);

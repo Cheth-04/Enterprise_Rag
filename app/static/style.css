@@ -505,3 +505,16 @@ html, body {
   color: var(--text-muted);
   margin-bottom: 12px;
 }
+
+.jayathisoft-watermark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 10px;
+  color: #C9A84C;
+  opacity: 0.85;
+  border-top: 1px solid #1C1F2E;
+  padding-top: 10px;
+}
